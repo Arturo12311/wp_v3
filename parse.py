@@ -34,8 +34,8 @@ class Chunkify:
     def chunk_json_string(self, json_str):
         chunked = {}
         
-        split_str = re.split(r'(\\\"\w+\\\")', json_str) # splits at and includes fieldnames
-        split_str = split_str[5:]
+        split_str = re.split(r'(\\\"[\w.]+\\\")', json_str) # splits at and includes fieldnames
+        split_str = split_str[1:]
         
         for i in range(0, len(split_str), 2): 
             key = split_str[i].strip('\\\"')
@@ -49,3 +49,21 @@ class ClassifyType:
     def __init__(self) -> None:
         pass
     
+chunkify = Chunkify(dataset)
+list_of_chunks = chunkify.run()
+count = 0
+i = 0
+for chunk in list_of_chunks:
+    i += 1
+    if not chunk:
+        count += 1
+        print(i)
+
+indexes = [1008]
+for i in indexes:
+    print(list_of_chunks[i])
+
+print(count)
+
+# for chunk in list_of_chunks:
+#     for name, string in chunk.items():
