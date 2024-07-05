@@ -4,7 +4,6 @@ import re
 with open('./data.json', 'r') as file:
     dataset = json.load(file)
 
-
 class Chunkify:
     """
     example usage:
@@ -58,7 +57,6 @@ class Chunkify:
             return base_prepended_chunk
         return chunk
 
-
 class ClassifyChunk:
     """
     example usage:
@@ -98,14 +96,21 @@ class ClassifyChunk:
                 return type
         return "unknown"
 
+def output(opcode, fields_chunk):
+    print("\n\n---------------------------------------------------")
+    print(f'"{opcode}" {{')
+    for fieldname, type in fields_chunk.items():
+        print(f'    {fieldname:<30}: {type}')
+    print('  }')
+
+
 
 
 chunkify = Chunkify(dataset)
 list_of_chunks = chunkify.run() # list of chunks
 
-for _ in range(0, 10):
-    for named_chunk in list_of_chunks:
-        [(opcode, chunk)] = named_chunk.items()        
-        classify_chunk = ClassifyChunk(chunk)    
-        classified = classify_chunk.run()
-        print(f"{opcode:<50} | {classified} \n\n-----------------------------------------------------------------------------------------------------------------")
+for chunk in list_of_chunks:
+    [(opcode, fields_chunk)] = chunk.items()        
+    classify_chunk = ClassifyChunk(fields_chunk)    
+    fields_chunk = classify_chunk.run()
+    output(opcode, fields_chunk)
