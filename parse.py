@@ -11,7 +11,8 @@ class Chunkify:
     chunkify = Chunkify(dataset)
     list_of_chunks = chunkify.run()
     
-    returns a list of dictionaries
+    outputs a list of dictionaries
+    [{opcode: {chunk_dictionary}}, ...]
     """
 
     def __init__(self, dataset):
@@ -26,44 +27,75 @@ class Chunkify:
 
         for instance in dataset:
             json_str = instance['ToJsonString']
-            chunk = self.chunk_json_string(json_str)
-            list_of_chunks.append(chunk)
-        
+            opcode = instance['opcode_name']
+
+            chunk = self.chunk_json_string(json_str) # returns dictionary
+            named_chunk = {opcode: chunk}
+            list_of_chunks.append(named_chunk)   
+
         return list_of_chunks
     
     def chunk_json_string(self, json_str):
         chunked = {}
         
-        split_str = re.split(r'(\\\"[\w.]+\\\")', json_str) # splits at and includes fieldnames
-        split_str = split_str[1:]
+        split_str = re.split(r'(\\\"[\w.]+\\\")', json_str) # split at fieldnames
+        split_str = split_str[5:]
         
         for i in range(0, len(split_str), 2): 
-            key = split_str[i].strip('\\\"')
+            key = split_str[i].strip('\\\"') #index 1007 name not found (DAT_090cae0e)
             value = split_str[i + 1].strip()
-            if key and value:
+            if key != "Members" and key and value:
                 chunked[key] = value
 
         return chunked
 
-class ClassifyType:
-    def __init__(self) -> None:
-        pass
-    
+class ClassifyChunk:
+    """
+    example usage:
+    classify_chunk = ClassifyChunk(chunk)
+    classified = classify_chunk.run()
+
+    takas a chunk as input           {fieldname: string, ...}
+    outputs the classified chunk     {fieldname: type, ...})
+    """
+
+    def __init__(self, chunk) -> None:
+        self.chunk = chunk 
+        self.classified = {}
+
+    def run(self):
+        for fieldname, string in self.chunk.items(): 
+            type = self.classify_type(string) 
+            self.classified[fieldname] = type
+        return self.classified
+
+    def get_patterns(self):
+        patterns= [
+            "(FTz\w+)::ToJsonString",
+            "StaticEnum<(ETz\w+)>",
+            "JsonSerializer<(TMap<[^,]+,TMap<[^,]+,[^,]+)",
+            "JsonSerializer<(TMap<[^,]+,[^,]+)",
+            "JsonSerializer<([^,]*)"
+            ]
+        return patterns
+
+    def classify_type(self, string):
+        patterns = self.get_patterns()
+        for pattern in patterns:
+            match = re.search(pattern, string)
+            if match:
+                type = match.group(1)
+                return type
+        return "unknown"
+
+
+
 chunkify = Chunkify(dataset)
-list_of_chunks = chunkify.run()
-count = 0
-i = 0
-for chunk in list_of_chunks:
-    i += 1
-    if not chunk:
-        count += 1
-        print(i)
+list_of_chunks = chunkify.run() # list of chunks
 
-indexes = [1008]
-for i in indexes:
-    print(list_of_chunks[i])
-
-print(count)
-
-# for chunk in list_of_chunks:
-#     for name, string in chunk.items():
+for _ in range(0, 10):
+    for named_chunk in list_of_chunks:
+        [(opcode, chunk)] = named_chunk.items()        
+        classify_chunk = ClassifyChunk(chunk)    
+        classified = classify_chunk.run()
+        print(f"{opcode:<50} | {classified} \n\n-----------------------------------------------------------------------------------------------------------------")
