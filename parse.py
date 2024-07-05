@@ -30,6 +30,7 @@ class Chunkify:
             opcode = instance['opcode_name']
 
             chunk = self.chunk_json_string(json_str) # returns dictionary
+            chunk = self.prepend_base_field(chunk)
             named_chunk = {opcode: chunk}
             list_of_chunks.append(named_chunk)   
 
@@ -48,6 +49,15 @@ class Chunkify:
                 chunked[key] = value
 
         return chunked
+    
+    def prepend_base_field(self, chunk):
+        if 'Base' in chunk:
+            base_field = {'Base': chunk['Base']}
+            chunk_without_base = {k: v for k, v in chunk.items() if k != 'Base'}
+            base_prepended_chunk = base_field | chunk_without_base
+            return base_prepended_chunk
+        return chunk
+
 
 class ClassifyChunk:
     """
