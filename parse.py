@@ -75,7 +75,6 @@ def output_to_console(opcode, fields_chunk): #temporary/testing pusrposes
         print(f'    {fieldname:<30}: {type}')
     print('  }')
 
-
 def main():
     """
     1. chunk raw data
@@ -97,3 +96,6 @@ def main():
         output_to_console(opcode, classified)
 
     # output
+
+# run the program
+main() 
