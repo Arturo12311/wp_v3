@@ -45,7 +45,7 @@ class ClassifyChunk:
     def __init__(self) -> None:
         # regex patterns (struct, enum, map/array/basictype)
         self.type_patterns = [
-            '(FTz\\w+)::ToJsonString',
+            '\s*(.*::ToJsonString())',
             'StaticEnum<(ETz\\w+)>',
             'JsonSerializer(<.*>)[\s\n]*::',
         ]
@@ -59,20 +59,26 @@ class ClassifyChunk:
     
     def determine_type(self, chunk):
         nullable = self.is_nullable(chunk) #check if nullable
+        is_message = self.is_message(chunk) 
+        if is_message: return (nullable, 'message') #check if bool
         is_bool = self.is_bool(chunk) 
         if is_bool: return (nullable, 'bool') #check if bool
         type = self.identify_type(chunk) #check other types if not bool
         type = self.clean_type(type) 
         return (nullable, type) #returns tuple
     
+    def is_message(self, chunk):
+        message_pattern = r'\(\*\*\(code \*\*\)\(\*\*\(long \*\*\)'
+        return bool(re.search(message_pattern, chunk)) #is message pattern in chunk?
+    
     def is_bool(self, chunk):
-        bool_pattern = 'DAT_0901b5c8' 
+        bool_pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == \'\\0\'|DAT_0901b5c8' 
         match = re.search(bool_pattern, chunk)
         if match: 
             return True
 
     def is_nullable(self, chunk):
-        nullable_pattern = '\(in_x0 \+ 0x[0-9A-Fa-f]+\) == 0'
+        nullable_pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == (0|(long *)0x0)'
         return bool(re.search(nullable_pattern, chunk)) #is nullable pattern in chunk?
 
     def identify_type(self, chunk):
@@ -94,7 +100,6 @@ class ClassifyChunk:
             if match: 
                 return match.group(1) #return the extracted pattern if matched
         return type #keep the same if no match
-
 
 def output_to_console(opcode, fields_chunk): #temporary/testing pusrposes
     print("\n\n---------------------------------------------------")
@@ -120,26 +125,28 @@ def main():
     list_of_chunks = chunkify.get_list_of_chunks(dataset) 
 
     # classify 
+    all_classified_data = {}
     for chunk in list_of_chunks:
         [(opcode, chunk)] = chunk.items()    
         classify = ClassifyChunk()    
-        classified = classify.classify_chunk(chunk)  
+        classified = classify.classify_chunk(chunk)
+        
+        # Format the classified data to match console output
+        formatted_classified = {}
+        for fieldname, type_info in classified.items():
+            if not type_info[0]:  # not nullable
+                formatted_classified[fieldname] = type_info[1]
+            else:
+                formatted_classified[fieldname] = f"(nullable, {type_info[1]})"
+        
+        all_classified_data[opcode] = formatted_classified
         output_to_console(opcode, classified)
+    
+    # output to JSON file
+    with open('classified_output.json', 'w') as outfile:
+        json.dump(all_classified_data, outfile, indent=2)
 
-    # output
+    print("\nClassification data has been written to 'classified_output.json'")
 
 # run the program
-# main() 
-
-# chunk 
-with open('./data.json', 'r') as file:
-    dataset = json.load(file)
-chunkify = Chunkify()
-list_of_chunks = chunkify.get_list_of_chunks(dataset) 
-
-# classify 
-for chunk in list_of_chunks:
-    [(opcode, chunk)] = chunk.items()    
-    classify = ClassifyChunk()    
-    classified = classify.classify_chunk(chunk)  
-    output_to_console(opcode, classified)    
+main() 
