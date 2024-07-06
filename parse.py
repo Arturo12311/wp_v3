@@ -48,18 +48,29 @@ class ClassifyChunk:
             '(FTz\\w+)::ToJsonString',
             'StaticEnum<(ETz\\w+)>',
             'JsonSerializer(<.*>)[\s\n]*::',
-            'DAT_0901b5c8.*?pcVar10'
         ]
 
     def classify_chunk(self, chunked):
         self.classified = {} #output dict
         for fieldname, chunk in chunked.items(): #for each chunk
-            nullable = self.is_nullable(chunk) 
-            type = self.identify_type(chunk) #determine type
-            type = self.clean_type(type)
-            self.classified[fieldname] = (nullable, type) #tuple as value for each fieldname key
+            chunk_tuple = self.determine_type(chunk) 
+            self.classified[fieldname] = chunk_tuple #tuple as value for each fieldname key
         return self.classified #return dictionary of classified chunks
     
+    def determine_type(self, chunk):
+        nullable = self.is_nullable(chunk) #check if nullable
+        is_bool = self.is_bool(chunk) 
+        if is_bool: return (nullable, 'bool') #check if bool
+        type = self.identify_type(chunk) #check other types if not bool
+        type = self.clean_type(type) 
+        return (nullable, type) #returns tuple
+    
+    def is_bool(self, chunk):
+        bool_pattern = 'DAT_0901b5c8' 
+        match = re.search(bool_pattern, chunk)
+        if match: 
+            return True
+
     def is_nullable(self, chunk):
         nullable_pattern = '\(in_x0 \+ 0x[0-9A-Fa-f]+\) == 0'
         return bool(re.search(nullable_pattern, chunk)) #is nullable pattern in chunk?
@@ -83,7 +94,7 @@ class ClassifyChunk:
             if match: 
                 return match.group(1) #return the extracted pattern if matched
         return type #keep the same if no match
-        
+
 
 def output_to_console(opcode, fields_chunk): #temporary/testing pusrposes
     print("\n\n---------------------------------------------------")
