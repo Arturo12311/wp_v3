@@ -56,6 +56,7 @@ class ClassifyChunk:
         for fieldname, chunk in chunked.items(): #for each chunk
             nullable = self.is_nullable(chunk) 
             type = self.identify_type(chunk) #determine type
+            type = self.clean_type(type)
             self.classified[fieldname] = (nullable, type) #tuple as value for each fieldname key
         return self.classified #return dictionary of classified chunks
     
@@ -72,20 +73,28 @@ class ClassifyChunk:
         return "unknown" #didnt match a pattern
     
     def clean_type(self, type):
-        """
-        this function will extract the type value from the  'JsonSerializer(<.*>)[\s\n]*:: pattern
-        """
+        patterns = [
+            r'(TArray<[^,]*),',      #TArray
+            r'(TMap<[^,]*,[^,]*)',   #TMap
+            r'<(.*),void>'           #Basic          
+        ]
+        for pattern in patterns: 
+            match = re.search(pattern, type) #check if pattern is in type
+            if match: 
+                return match.group(1) #return the extracted pattern if matched
+        return type #keep the same if no match
+        
 
 def output_to_console(opcode, fields_chunk): #temporary/testing pusrposes
     print("\n\n---------------------------------------------------")
     print(f'"{opcode}" {{')
     for fieldname, type in fields_chunk.items():
-        if type[0] == False: # not nullable
+        if type[0] == False: #not nullable
             print(f'    {fieldname:<30}: {type[1]}') #just print the type
         else:
             print(f'    {fieldname:<30}: (nullable, {type[1]})') #prepend nullable label
-    print('  }')
-
+    print('  }')\
+    
 def main():
     """
     1. chunk raw data
