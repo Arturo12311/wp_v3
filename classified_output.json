@@ -1,7 +1,7 @@
 {
   "AnniversaryAchievementInitializeDataNotify": {
     "Base": "FTzErTozMessage::ToJsonString",
-    "AnniversaryAchievementInfos": "TArray<TSharedPtr<FTzAnniversaryAchievementInfo"
+    "AnniversaryAchievementInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzAnniversaryAchievementInfo"
   },
   "CheatSpawnNpcRequest": {
     "Base": "FTzErTozMessage::ToJsonString",
@@ -445,7 +445,7 @@
   },
   "SpellstoneAdditionalStatsInfo": {
     "SpellstoneAdditionalSkillStatsInfo": "(nullable, FTzSpellstoneAdditionalSkillStatsInfo::ToJsonString)",
-    "SpellstoneAdditionalBuffStatsInfosByBuffKindAndApplicableSpellstoneBuffKind": "TMap<ETzBuffKindType,TMap<ETzApplicableSpellstoneBuffKindType",
+    "SpellstoneAdditionalBuffStatsInfosByBuffKindAndApplicableSpellstoneBuffKind": "TMap<ETzBuffKindType,TMap<ETzApplicableSpellstoneBuffKindType,TSharedPtr<FTzSpellstoneAdditionalBuffStatsInfo",
     "SpellstoneAdditionalHealthAndManaStatsInfosByStatsAffectKind": "TMap<ETzStatsAffectKindType,TSharedPtr<FTzSpellstoneAdditionalHealthAndManaStatsInfo"
   },
   "ErosionInstalledWithoutPermissionUpdateNotify": {
@@ -751,7 +751,7 @@
     "Base": "FTzErTozMessageWithResultCode::ToJsonString"
   },
   "HavenOrganizationStatsDetailInfo": {
-    "Stats": "TMap<ETzHavenOrganizationStatSourceType,TMap<FTzCuid"
+    "Stats": "TMap<ETzHavenOrganizationStatSourceType,TMap<FTzCuid,int"
   },
   "RealmIntegrationBattleWarpReturnResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString"
@@ -820,10 +820,10 @@
   "RealmAccountRealmTransferLimitedItemCountResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
     "ItemCountByCuid": "TMap<FTzCuid,long_long",
-    "ItemCountByItemGradeAndItemCategory": "TMap<ETzItemCategoryType,TMap<ETzItemGradeType",
-    "GearCountByItemGradeAndGearKind": "TMap<ETzGearKindType,TMap<ETzItemGradeType",
-    "AffectItemCountByItemGradeAndAffectItemKind": "TMap<ETzAffectItemKindType,TMap<ETzItemGradeType",
-    "NonUsableItemCountByItemGradeAndNonUsableItemKind": "TMap<ETzNonUsableItemKindType,TMap<ETzItemGradeType"
+    "ItemCountByItemGradeAndItemCategory": "TMap<ETzItemCategoryType,TMap<ETzItemGradeType,long_long",
+    "GearCountByItemGradeAndGearKind": "TMap<ETzGearKindType,TMap<ETzItemGradeType,long_long",
+    "AffectItemCountByItemGradeAndAffectItemKind": "TMap<ETzAffectItemKindType,TMap<ETzItemGradeType,long_long",
+    "NonUsableItemCountByItemGradeAndNonUsableItemKind": "TMap<ETzNonUsableItemKindType,TMap<ETzItemGradeType,long_long"
   },
   "CheatNoticeResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
@@ -2184,7 +2184,7 @@
   },
   "MonsterBookInfoUpdateNotify": {
     "Base": "FTzErTozMessage::ToJsonString",
-    "CategoryCuidToNodeStateInfos": "TArray<TSharedPtr<FTzMonsterBookNodeStateInfo",
+    "CategoryCuidToNodeStateInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzMonsterBookNodeStateInfo",
     "CategoryCuidToCollectionInfo": "TMap<FTzCuid,TSharedPtr<FTzMonsterBookCollectionInfo"
   },
   "CheatCovenantRubyShopResetMerchandiseBuyCountResponse": {
@@ -2443,7 +2443,7 @@
     "BuildingLevelToConstruct": "int"
   },
   "PlayerCampaignInfo": {
-    "ActiveCampaignProgressInfos": "TArray<FTzCuid",
+    "ActiveCampaignProgressInfos": "TMap<FTzCuid,TArray<FTzCuid",
     "CampaignTicketInfos": "TMap<FTzCuid,TSharedPtr<FTzCampaignTicketInfo"
   },
   "GuiseEquipResponse": {
@@ -2535,7 +2535,7 @@
     "UpdateDateTime": "FDateTime"
   },
   "CovenantCampaignInfo": {
-    "ActiveCampaignProgressInfos": "TArray<FTzCuid",
+    "ActiveCampaignProgressInfos": "TMap<FTzCuid,TArray<FTzCuid",
     "UpdateDateTime": "FDateTime",
     "CovenantCampaignProgressInfo": "message",
     "CovenantCampaignTicketCount": "int"
@@ -2652,10 +2652,10 @@
     "Name": "std::__ndk1::basic_string<char,std::__ndk1::char_traits<char>,toz::DefaultAllocator<char>>"
   },
   "MonsterBookInfo": {
-    "CategoryCuidToNodeStateInfos": "TArray<TSharedPtr<FTzMonsterBookNodeStateInfo",
+    "CategoryCuidToNodeStateInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzMonsterBookNodeStateInfo",
     "CategoryCuidToCollectionInfo": "TMap<FTzCuid,TSharedPtr<FTzMonsterBookCollectionInfo",
     "CategoryCuidToFreeAnalysisCount": "TMap<FTzCuid,long_long",
-    "CategoryCuidToAnalysisStatChangeInfos": "TArray<TSharedPtr<FTzCharacterStatChangeInfo"
+    "CategoryCuidToAnalysisStatChangeInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzCharacterStatChangeInfo"
   },
   "BattalionMemberCoreInfo": {
     "CovenantGuid": "long_long",
@@ -2904,7 +2904,7 @@
   },
   "ArquiAttunementInfo": {
     "LevelByArquiAttunementCuid": "TMap<FTzCuid,int",
-    "AetherOptionLevelByCategoryCuidAndOptionCuid": "TMap<FTzCuid,TMap<FTzCuid"
+    "AetherOptionLevelByCategoryCuidAndOptionCuid": "TMap<FTzCuid,TMap<FTzCuid,int"
   },
   "CovenantDeleteCovenantMemberRoleResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
@@ -3363,7 +3363,7 @@
   },
   "CheatClearGearResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
-    "UnequipGearSlots": "TArray<ETzGearSlotType",
+    "UnequipGearSlots": "TMap<ETzEquipmentPresetIndexType,TArray<ETzGearSlotType",
     "PlayerPublicStatsInfo": "(nullable, FTzPlayerPublicStatsInfo::ToJsonString)",
     "PlayerPrivateStatsInfo": "(nullable, FTzPlayerPrivateStatsInfo::ToJsonString)"
   },
@@ -3618,7 +3618,7 @@
   },
   "ResourceHistoryInfo": {
     "IncomeHistories": "TMap<ETzResourceKindType,long_long",
-    "ExpenseHistories": "TMap<ETzResourceKindType,TMap<ETzResourceExpenseKindType"
+    "ExpenseHistories": "TMap<ETzResourceKindType,TMap<ETzResourceExpenseKindType,long_long"
   },
   "ErosionInfo": {
     "Base": "FTzEntityInfo::ToJsonString",
@@ -3743,7 +3743,7 @@
     "RewardCuid": "FTzCuid::ToJsonString",
     "CraftCount": "int",
     "MaterialGroupOrderList": "TArray<FTzCuid",
-    "MaterialCuidToItemSelectors": "TArray<TSharedPtr<FTzItemSelector"
+    "MaterialCuidToItemSelectors": "TMap<FTzCuid,TArray<TSharedPtr<FTzItemSelector"
   },
   "StrongholdBattleAffectSourceInfo": {
     "Base": "FTzAffectSourceInfo::ToJsonString",
@@ -4721,7 +4721,7 @@
   "CovenantRubyShopInitialDataNotify": {
     "Base": "FTzPubSubChannelInitialDataNotify::ToJsonString",
     "ShopInfos": "TMap<FTzCuid,TSharedPtr<FTzCovenantRubyShopInfo",
-    "ShopMerchandiseInfos": "TArray<TSharedPtr<FTzCovenantRubyShopMerchandiseInfo"
+    "ShopMerchandiseInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzCovenantRubyShopMerchandiseInfo"
   },
   "RedrawableItemRedrawRequest": {
     "Base": "FTzErTozMessage::ToJsonString",
@@ -4926,7 +4926,7 @@
   },
   "BulkCharacterMoveNotify": {
     "Base": "FTzErTozMessage::ToJsonString",
-    "CharacterMoveInfos": "TArray<TSharedPtr<FTzCharacterMoveInfo"
+    "CharacterMoveInfos": "TMap<long_long,TArray<TSharedPtr<FTzCharacterMoveInfo"
   },
   "UnlockedContentsNewMarkCheckResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
@@ -7210,8 +7210,8 @@
     "ShopKind": "ETzShopKindType",
     "RequestedCommand": "ETzSubscriptionCommandType",
     "RegisteredGoodsList": "TArray<TSharedPtr<FTzRegisteredGoodsInfo",
-    "BuyCountInfos": "TArray<TSharedPtr<FTzGoodsBuyCountInfo",
-    "RegisteredGoodsBuyCountInfos": "TArray<TSharedPtr<FTzRegisteredGoodsBuyCountInfo",
+    "BuyCountInfos": "TMap<ETzBuyOrCraftLimitLevelType,TArray<TSharedPtr<FTzGoodsBuyCountInfo",
+    "RegisteredGoodsBuyCountInfos": "TMap<ETzBuyOrCraftLimitLevelType,TArray<TSharedPtr<FTzRegisteredGoodsBuyCountInfo",
     "AutoBuySettings": "TArray<TSharedPtr<FTzAutoBuyInfo",
     "SubscribeKeepaliveInterval_sec": "int",
     "ShopCuid": "FTzCuid::ToJsonString"
@@ -7242,7 +7242,7 @@
     "InitialHealthPointsPotionCount": "long_long"
   },
   "CovenantOrganizationStatsDetailInfo": {
-    "Stats": "TMap<ETzCovenantOrganizationStatSourceType,TMap<FTzCuid"
+    "Stats": "TMap<ETzCovenantOrganizationStatSourceType,TMap<FTzCuid,int"
   },
   "CovenantResetCovenantCampaignTicketCountNotify": {
     "Base": "FTzErTozMessage::ToJsonString",
@@ -7903,7 +7903,7 @@
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
     "GearCuid": "FTzCuid::ToJsonString",
     "TestCount": "int",
-    "GearEnchantPatternCuidToStatKindToAmountToCount": "TMap<FTzCuid,TMap<ETzAdjustableStatKindType"
+    "GearEnchantPatternCuidToStatKindToAmountToCount": "TMap<FTzCuid,TMap<ETzAdjustableStatKindType,TMap<float"
   },
   "CheatMonsterBookSetAnalysisInfoResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
@@ -8550,7 +8550,7 @@
   },
   "CovenantBuildingWorkInitialDataNotify": {
     "Base": "FTzPubSubChannelInitialDataNotify::ToJsonString",
-    "BuildingWorkInfos": "TMap<FTzCuid,TMap<FTzCuid"
+    "BuildingWorkInfos": "TMap<FTzCuid,TMap<FTzCuid,TSharedPtr<FTzBuildingWorkInfo"
   },
   "ClanSelectionQuestAcceptResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
@@ -8579,7 +8579,7 @@
     "SkillCuids": "TSet<FTzCuid,DefaultKeyFuncs<FTzCuid,false>,FDefaultSetAllocator>",
     "PlayerSkillSlotSetInfos": "TMap<ETzStanceType,TSharedPtr<FTzPlayerSkillSlotSetInfo",
     "PlayerSkillCooldownExpireDateTimeRangeInfos": "TMap<FTzCuid,TSharedPtr<FTzDateTimeRangeInfo",
-    "InstalledArquiruneInfos": "TMap<FTzCuid,TMap<FTzCuid",
+    "InstalledArquiruneInfos": "TMap<FTzCuid,TMap<FTzCuid,bool",
     "SpellstoneSlotPageInfos": "TMap<FTzCuid,TSharedPtr<FTzSpellstoneSlotPageInfo",
     "ReplacementSkillCuidsByRootSkillCuid": "TMap<FTzCuid,FTzCuid"
   },
@@ -8601,8 +8601,8 @@
     "Base": "FTzErTozMessageWithResultCode::ToJsonString",
     "CurrencyContainerUpdateInfo": "(nullable, FTzPlayerCurrencyContainerUpdateInfo::ToJsonString)",
     "CombinedInventoryUpdateInfo": "(nullable, FTzCombinedInventoryUpdateInfo::ToJsonString)",
-    "BuyCountInfos": "TArray<TSharedPtr<FTzGoodsBuyCountInfo",
-    "RegisteredGoodsBuyCountInfos": "TArray<TSharedPtr<FTzRegisteredGoodsBuyCountInfo",
+    "BuyCountInfos": "TMap<ETzBuyOrCraftLimitLevelType,TArray<TSharedPtr<FTzGoodsBuyCountInfo",
+    "RegisteredGoodsBuyCountInfos": "TMap<ETzBuyOrCraftLimitLevelType,TArray<TSharedPtr<FTzRegisteredGoodsBuyCountInfo",
     "RegisterShopBuyFailItems": "TMap<long_long,long_long",
     "MostExpensiveGoodsItemIndex": "message"
   },
@@ -8996,7 +8996,7 @@
     "DistrictCuid": "FTzCuid::ToJsonString",
     "PvpBattleDisplayKind": "ETzPvpBattleDisplayKindType",
     "PvpBattleKillDeathInfos": "TArray<TSharedPtr<FTzPvpBattleKillDeathInfo",
-    "PvpBattleKillDeathCountInfos": "TMap<FTzPvpBattleCovenantId,TMap<FTzPvpBattlePlayerId",
+    "PvpBattleKillDeathCountInfos": "TMap<FTzPvpBattleCovenantId,TMap<FTzPvpBattlePlayerId,TSharedPtr<FTzPvpBattleKillDeathCountInfo",
     "PvpBattlePlayerInfos": "TMap<FTzPvpBattlePlayerId,TSharedPtr<FTzPvpBattlePlayerInfo",
     "PvpBattleCovenantInfos": "TMap<FTzPvpBattleCovenantId,TSharedPtr<FTzPvpBattleCovenantInfo",
     "Location_cm": "FVector"
@@ -9420,7 +9420,7 @@
     "WaitingRegistrationOrForSaleGoodsInfos": "TMap<long_long,TSharedPtr<FTzMarketSellerGoodsInfo",
     "SoldOrExpiredGoodsInfos": "TMap<long_long,TSharedPtr<FTzMarketSellerGoodsInfo",
     "TransactionHistories": "TArray<TSharedPtr<FTzMarketTransactionInfo",
-    "FavoriteItemInfosByMarketKind": "TArray<TSharedPtr<FTzMarketFavoriteItemInfo",
+    "FavoriteItemInfosByMarketKind": "TMap<ETzMarketKindType,TArray<TSharedPtr<FTzMarketFavoriteItemInfo",
     "PlayerMarketTransactionProcessInfos": "TMap<long_long,TSharedPtr<FTzPlayerMarketTransactionProcessInfo"
   },
   "GameOptionModifyRequest": {
@@ -9518,7 +9518,7 @@
     "TaxInfo": "(nullable, FTzTaxInfo::ToJsonString)",
     "StrongholdBuildingAccessPermissionKinds": "TMap<ETzBuildingKindType,ETzBuildingAccessPermissionKindType",
     "StrongholdBattleAttackPhase": "ETzStrongholdBattleAttackPhaseType",
-    "HavenEventInfos": "TMap<FTzCuid,TMap<FTzCuid"
+    "HavenEventInfos": "TMap<FTzCuid,TMap<FTzCuid,TSharedPtr<FTzHavenEventInfo"
   },
   "StrategicObjectiveTargetInfo": {
     "StrategicObjectiveTargetGuid": "long_long",
@@ -11382,8 +11382,8 @@
     "ReturnValue": "message"
   },
   "GoodsBuyCountsInfo": {
-    "GoodsBuyCounts": "TMap<ETzBuyOrCraftLimitLevelType,TMap<FTzCuid",
-    "RegisteredGoodsBuyCounts": "TMap<ETzBuyOrCraftLimitLevelType,TMap<FTzRegisteredGoodsBuyCountKey"
+    "GoodsBuyCounts": "TMap<ETzBuyOrCraftLimitLevelType,TMap<FTzCuid,TSharedPtr<FTzGoodsBuyCountInfo",
+    "RegisteredGoodsBuyCounts": "TMap<ETzBuyOrCraftLimitLevelType,TMap<FTzRegisteredGoodsBuyCountKey,TSharedPtr<FTzRegisteredGoodsBuyCountInfo"
   },
   "MailReceiveAttachmentsRequest": {
     "Base": "FTzErTozMessage::ToJsonString",
@@ -11473,8 +11473,8 @@
   "FieldInitializeInfo": {
     "TerritoryInfos": "TArray<TSharedPtr<FTzTerritoryInfo",
     "ZoneInfos": "TArray<TSharedPtr<FTzZoneInfo",
-    "BossSpawnInfos": "TArray<TSharedPtr<FTzBossSpawnInfo",
-    "OccupiableNpcBossSpawnInfos": "TArray<TSharedPtr<FTzOccupiableNpcBossSpawnInfo",
+    "BossSpawnInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzBossSpawnInfo",
+    "OccupiableNpcBossSpawnInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzOccupiableNpcBossSpawnInfo",
     "OccupiableNpcInfos": "TArray<TSharedPtr<FTzOccupiableNpcInfo"
   },
   "CheatChangeStrongholdBuildingLevelResponse": {
@@ -12903,7 +12903,7 @@
     "GearEnchantGrade": "ETzGearEnchantGradeType",
     "GearEnchantOptionGrades": "TMap<short,ETzGearEnchantGradeType",
     "TestCount": "int",
-    "GearEnchantSlotToStatKindToAmountToCount": "TMap<short,TMap<ETzAdjustableStatKindType"
+    "GearEnchantSlotToStatKindToAmountToCount": "TMap<short,TMap<ETzAdjustableStatKindType,TMap<float"
   },
   "CheatOccupyStrongholdResponse": {
     "Base": "FTzErTozMessageWithResultCode::ToJsonString"
@@ -13045,7 +13045,7 @@
   },
   "WorldMapPvpBattleInitialDataNotify": {
     "Base": "FTzPubSubChannelInitialDataNotify::ToJsonString",
-    "PvpBattleInfos": "TMap<FTzCuid,TMap<long_long"
+    "PvpBattleInfos": "TMap<FTzCuid,TMap<long_long,TSharedPtr<FTzPvpBattleInfo"
   },
   "CheatOpenAllFogRequest": {
     "Base": "FTzErTozMessage::ToJsonString"
@@ -13118,7 +13118,7 @@
   },
   "CovenantHistoryShowArrivalNotify": {
     "Base": "FTzErTozMessage::ToJsonString",
-    "CovenantHistoryInfos": "TArray<TSharedPtr<FTzCovenantHistoryInfo"
+    "CovenantHistoryInfos": "TMap<ETzCovenantHistoryCategoryType,TArray<TSharedPtr<FTzCovenantHistoryInfo"
   },
   "FollowerDispatchAutomationInfo": {
     "DispatchAutomationState": "ETzFollowerDispatchAutomationStateType",
@@ -13296,13 +13296,13 @@
     "ActivatedCollectionCategoryCuids": "TSet<FTzCuid,DefaultKeyFuncs<FTzCuid,false>,FDefaultSetAllocator>",
     "CollectionProgressInfos": "TMap<FTzCuid,TSharedPtr<FTzCollectionProgressInfo",
     "BasicOrGrowthGuideAchievementInfos": "TArray<TSharedPtr<FTzBasicOrGrowthGuideAchievementInfo",
-    "AnniversaryAchievementInfos": "TArray<TSharedPtr<FTzAnniversaryAchievementInfo",
+    "AnniversaryAchievementInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzAnniversaryAchievementInfo",
     "AnniversaryAchievementPointInfos": "TArray<TSharedPtr<FTzAnniversaryAchievementPointInfo",
     "DiscoveredSelfieDoodadSpawnerCuids": "TSet<FTzCuid,DefaultKeyFuncs<FTzCuid,false>,FDefaultSetAllocator>",
     "LastDeathRecordInfo": "message",
     "DeathPenaltyRecordInfos": "TArray<TSharedPtr<FTzDeathPenaltyRecordInfo",
     "DeathPenaltyFreeRecoveryInfo": "message",
-    "TransmutationProgressInfos": "TMap<ETzItemCategoryType,TMap<ETzItemGradeType",
+    "TransmutationProgressInfos": "TMap<ETzItemCategoryType,TMap<ETzItemGradeType,short",
     "MissionInfos": "TMap<FTzCuid,TSharedPtr<FTzMissionInfo",
     "ArquiAttunementInfo": "(nullable, FTzArquiAttunementInfo::ToJsonString)",
     "AlertPlayers": "TMap<long_long,FDateTime",

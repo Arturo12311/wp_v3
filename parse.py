@@ -91,12 +91,15 @@ class ClassifyChunk:
     
     def clean_type(self, type):
         patterns = [
-            r'(TArray<[^,]*),',      #TArray
-            r'(TMap<[^,]*,[^,]*)',   #TMap
-            r'<(.*),void>'           #Basic          
+            r'(TMap<[^,]*,TMap<[^,]*,[^,]*)', #Nested TMap
+            r'(TMap<[^,]*,[^,]*)',            #TMap
+            r'(TArray<[^,]*),',               #TArray
+            r'<(.*),void>'                    #Basic          
         ]
+        count = 0
         for pattern in patterns: 
             match = re.search(pattern, type) #check if pattern is in type
+            count += 1
             if match: 
                 return match.group(1) #return the extracted pattern if matched
         return type #keep the same if no match
