@@ -43,36 +43,47 @@ class ClassifyChunk:
     classifies chunk to specific type
     """
     def __init__(self) -> None:
-        # regex patterns (struct, enum, map, array, basictype)
-        self.patterns = [
+        # regex patterns (struct, enum, map/array/basictype)
+        self.type_patterns = [
             '(FTz\\w+)::ToJsonString',
             'StaticEnum<(ETz\\w+)>',
-            'JsonSerializer<(TMap<[^,]+,TMap<[^,]+,[^,]+)',
-            'JsonSerializer<(TMap<[^,]+,[^,]+)',
-            'JsonSerializer<([^,]*)',
+            'JsonSerializer(<.*>)[\s\n]*::',
             'DAT_0901b5c8.*?pcVar10'
         ]
 
     def classify_chunk(self, chunked):
         self.classified = {} #output dict
-        for fieldname, chunk in chunked.items(): #for each chunk 
+        for fieldname, chunk in chunked.items(): #for each chunk
+            nullable = self.is_nullable(chunk) 
             type = self.identify_type(chunk) #determine type
-            self.classified[fieldname] = type 
+            self.classified[fieldname] = (nullable, type) #tuple as value for each fieldname key
         return self.classified #return dictionary of classified chunks
+    
+    def is_nullable(self, chunk):
+        nullable_pattern = '\(in_x0 \+ 0x[0-9A-Fa-f]+\) == 0'
+        return bool(re.search(nullable_pattern, chunk)) #is nullable pattern in chunk?
 
     def identify_type(self, chunk):
-        for pattern in self.patterns: #for each pattern 
+        for pattern in self.type_patterns: #for each type pattern 
             match = re.search(pattern, chunk) #check if pattern in chunk
             if match:
                 type = match.group(1) 
                 return type #return matched pattern type
-        return "unknown" #chunk didnt match a pattern
+        return "unknown" #didnt match a pattern
+    
+    def clean_type(self, type):
+        """
+        this function will extract the type value from the  'JsonSerializer(<.*>)[\s\n]*:: pattern
+        """
 
 def output_to_console(opcode, fields_chunk): #temporary/testing pusrposes
     print("\n\n---------------------------------------------------")
     print(f'"{opcode}" {{')
     for fieldname, type in fields_chunk.items():
-        print(f'    {fieldname:<30}: {type}')
+        if type[0] == False: # not nullable
+            print(f'    {fieldname:<30}: {type[1]}') #just print the type
+        else:
+            print(f'    {fieldname:<30}: (nullable, {type[1]})') #prepend nullable label
     print('  }')
 
 def main():
@@ -98,4 +109,17 @@ def main():
     # output
 
 # run the program
-main() 
+# main() 
+
+# chunk 
+with open('./data.json', 'r') as file:
+    dataset = json.load(file)
+chunkify = Chunkify()
+list_of_chunks = chunkify.get_list_of_chunks(dataset) 
+
+# classify 
+for chunk in list_of_chunks:
+    [(opcode, chunk)] = chunk.items()    
+    classify = ClassifyChunk()    
+    classified = classify.classify_chunk(chunk)  
+    output_to_console(opcode, classified)    
