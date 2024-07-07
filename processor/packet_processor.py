@@ -12,22 +12,26 @@ class Parse:
     unpacks data from packet 
     """
     def __init__(self, packet, type="msg", struct_name=""):
-        if type == "msg":
-            self.opcode, self.payload = self.get_opcode_name(packet)
-            print(f'Opcode: {self.opcode}')
-            print('Payload:', [int(byte) for byte in self.payload])
-            print('---')
-        elif type == "struct":
-            self.opcode = struct_name
-            self.payload = packet
-            print(f'Struct Name: {self.opcode}')
-            print('Payload:', [int(byte) for byte in self.payload])
-            print('---')
-        self.fields = self.get_fields(self.opcode)
-        print('Fields: ', [(field,type) for field, type in self.fields.items()])
-        self.parsed, self.remaining = self.parse_fields(self.fields, self.payload)
-        return self.parsed, self.remaining
+        self.packet = packet
+        self.type = type
+        self.struct_name = struct_name
     
+    def run(self):
+        if self.type == "msg":
+            print("msg")
+            opcode, payload = self.get_opcode_name(self.packet)
+            print("-------------------------------------");print(f'Opcode: {opcode}');print('Payload:', [int(byte) for byte in payload]);print('---')
+        elif self.type == "struct":
+            print("struct")
+            opcode = self.struct_name
+            payload = self.packet
+            print("-------------------------------------");print(f'Struct Name: {opcode}');print('Payload:', [int(byte) for byte in payload]);print('---')
+        fields = self.get_fields(opcode)
+        print('Fields: ', [(field,type) for field, type in fields.items()]);print('---')
+        parsed, remaining = self.parse_fields(fields, payload)
+        print('Parsed: ', [field for field in parsed]); print('Remaining: ', remaining);print('---')
+        return parsed, remaining
+
     def get_opcode_name(self, packet):  
         null_byte = packet[0]
         opcode = struct.unpack('<I', packet[1:5])[0]
@@ -47,13 +51,14 @@ class Parse:
 
     def parse_fields(self, fields, payload):
         for f, t in fields.items():
+            print(t)
             value, rest = self.parse_field(t, payload)
             fields[f] = value; 
             payload = rest
         return fields, payload 
 
     def parse_field(self, field, payload):
-        if field == 'Fstring':
+        if 'Fstring' in field:
             null = payload[0]
             payload = payload[1:]
             length = struct.unpack('<I', payload[0:4])[0]
@@ -65,16 +70,16 @@ class Parse:
             rest = payload[4:]
 
         elif field == 'message':
-            value, rest = Parse(payload)
+            value, rest = Parse(payload).run() 
 
         elif '::ToJsonString' in field:
             name_pattern = r'(?:FTz)?(.*)::ToJsonString'
             match = re.search(name_pattern, field)
             struct_name = match.group(1)
-            value, rest = Parse(payload, "struct", struct_name)
+            value, rest = Parse(payload, "struct", struct_name).run()
 
         else:
-            raise ValueError(f"Unknown field type: {type}")
+            raise ValueError(f"Unknown field type: {field}")
         return value, rest
 
 def test_parser():
@@ -97,13 +102,10 @@ def test_parser():
             13, 0, 0, 0, 48, 84, 55, 48, 48, 87, 48, 49, 48, 52, 48, 50, 48, 240, 46, 17, 0, 0, 0, 0,
             0
         ])
-    try:
-        parsed, remaining = Parse(packet)
-        print("Parsing successful!")
-        print("Parsed result:", parsed)
-        print("Remaining: ", remaining)
-    except Exception as e:
-        print(f"Parsing failed: {e}")
+    parsed, remaining = Parse(packet).run()
+    print("Parsing successful!")
+    print("Parsed result:", parsed)
+    print("Remaining: ", remaining)
 
 if __name__ == "__main__":
     test_parser()
