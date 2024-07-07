@@ -5,90 +5,77 @@ import re
 with open('opcode_map.json', 'r') as file:
     opcode_dictionary = json.load(file)
 with open('extractor_output.json', 'r') as file:
-    data_structures_dictionary = json.load(file)
+    extractor_output = json.load(file)
 
-class Parser:
+class Parse:
     """
-    decodes data from bytestram to datastructures
+    unpacks data from packet 
     """
-    def __init__(self):
-        pass
-
-
-    def parse(self, msg):
-        msg_op = msg[0:5]; msg_op = self.get_opcode_name(msg_op) #opcode name
-        msg_data = msg[5:] #payload data
-
-        msg_dict = self.get_matching_dictionary(msg_op)
-        
-        print(f'Opcode Name: {msg_op}\nData Structure: {msg_dict}')
-
-        for field, type in msg_dict.items():
-            value, rest = self.parse_field(type, msg_data)
-            if value is not None:
-                msg_dict[field] = value
-                msg_data = rest
-
-        return msg_dict, msg_data # Return both the parsed dictionary and remaining data
+    def __init__(self, packet, type="msg", struct_name=""):
+        if type == "msg":
+            self.opcode, self.payload = self.get_opcode_name(packet)
+            print(f'Opcode: {self.opcode}')
+            print('Payload:', [int(byte) for byte in self.payload])
+            print('---')
+        elif type == "struct":
+            self.opcode = struct_name
+            self.payload = packet
+            print(f'Struct Name: {self.opcode}')
+            print('Payload:', [int(byte) for byte in self.payload])
+            print('---')
+        self.fields = self.get_fields(self.opcode)
+        print('Fields: ', [(field,type) for field, type in self.fields.items()])
+        self.parsed, self.remaining = self.parse_fields(self.fields, self.payload)
+        return self.parsed, self.remaining
     
-    def get_matching_dictionary(self, name):
-        if name in data_structures_dictionary: 
-            matching_structure = data_structures_dictionary[name].copy()  # returns matching dictionary
+    def get_opcode_name(self, packet):  
+        null_byte = packet[0]
+        opcode = struct.unpack('<I', packet[1:5])[0]
+        opcode = opcode_dictionary.get(str(opcode))
+
+        if opcode is None:
+            raise ValueError(f"Unknown opcode: {opcode}")
+        
+        return opcode, packet[5:]
+
+    def get_fields(self, opcode):
+        if opcode in extractor_output:
+            return extractor_output[opcode].copy()
         else:
-            raise ValueError(f"Unknown opcode: {name}") 
-        return matching_structure
+            print(f"Warning: No fields found for opcode {opcode}")
+            return {}  # Return an empty dictionary if no fields are found
 
-    def parse_field(self, type, msg_data):
-        if type == 'Fstring':
-            length = struct.unpack('<I', msg_data[0:4])[0]
-            value = msg_data[4:4+length].decode('utf-8')  # Assuming UTF-8 encoding
-            rest = msg_data[4+length:]
+    def parse_fields(self, fields, payload):
+        for f, t in fields.items():
+            value, rest = self.parse_field(t, payload)
+            fields[f] = value; 
+            payload = rest
+        return fields, payload 
 
-        elif type == "int":
-            value = struct.unpack('<I', msg_data[0:4])[0]
-            rest = msg_data[4:]
+    def parse_field(self, field, payload):
+        if field == 'Fstring':
+            null = payload[0]
+            payload = payload[1:]
+            length = struct.unpack('<I', payload[0:4])[0]
+            value = payload[4:4+length].decode('utf-8')
+            rest = payload[4+length:]
 
-        elif type == 'message':
-            value, rest = self.parse(msg_data)
+        elif field == "int":
+            value = struct.unpack('<I', payload[0:4])[0]
+            rest = payload[4:]
 
-        elif '::ToJsonString' in type:
-            value, rest = self.parse_structure(type, msg_data)
+        elif field == 'message':
+            value, rest = Parse(payload)
+
+        elif '::ToJsonString' in field:
+            name_pattern = r'(?:FTz)?(.*)::ToJsonString'
+            match = re.search(name_pattern, field)
+            struct_name = match.group(1)
+            value, rest = Parse(payload, "struct", struct_name)
 
         else:
             raise ValueError(f"Unknown field type: {type}")
         return value, rest
-
-    def parse_structure(self, string, rest):
-        name_pattern = r'(?:FTz)?(.*)::ToJsonString'
-        match = re.search(name_pattern, string)
-        if not match:
-            raise ValueError(f"Unable to parse structure name from '{string}'")
-        
-        name = match.group(1)
-        struct_dict = self.get_matching_dictionary(name)
-        
-        for field, type in struct_dict.items():
-            value, rest = self.parse_field(type, rest)
-            struct_dict[field] = value
-        
-        return struct_dict, rest
-
-    def get_opcode_name(self, op):
-        if len(op) != 5:
-            raise ValueError("Opcode must be 5 bytes long")
-    
-        null_byte = op[0]
-        if null_byte != 0:
-            raise ValueError("First byte of opcode must be null (0)")
-
-        opcode = struct.unpack('<I', op[1:5])[0]
-        opcode_name = opcode_dictionary.get(str(opcode))
-
-        if opcode_name is None:
-            raise ValueError(f"Unknown opcode: {opcode}")
-        
-        return opcode_name
-
 
 def test_parser():
     packet = bytes([
@@ -110,12 +97,11 @@ def test_parser():
             13, 0, 0, 0, 48, 84, 55, 48, 48, 87, 48, 49, 48, 52, 48, 50, 48, 240, 46, 17, 0, 0, 0, 0,
             0
         ])
-    
-    parser = Parser()
     try:
-        result, remaining = parser.parse(packet)
+        parsed, remaining = Parse(packet)
         print("Parsing successful!")
-        print("Parsed result:", result)
+        print("Parsed result:", parsed)
+        print("Remaining: ", remaining)
     except Exception as e:
         print(f"Parsing failed: {e}")
 
