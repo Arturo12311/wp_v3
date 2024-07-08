@@ -3,9 +3,9 @@ import json
 import re
 import sys
 
-with open('opcode_dict.json', 'r') as file:
+with open('_opcode_dict.json', 'r') as file:
     opcode_dictionary = json.load(file)
-with open('extracted_structs.json', 'r') as file:
+with open('_extracted_structs.json', 'r') as file:
     extracted_structs = json.load(file)
 
 class Parse:

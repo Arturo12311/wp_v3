@@ -58,88 +58,108 @@ class ClassifyChunk:
         struct_formatted = {} #output dict
         for field_name, field_chunk in struct_chunk.items(): 
             field_formatted = self.format_field(field_chunk) 
-            struct_formatted[field_name] = field_formatted #{type: x, size: y, nullable: z}
+            struct_formatted[field_name] = field_formatted #dict
         return struct_formatted 
     
     def format_field(self, chunk):
-        nullable = self.is_nullable(chunk) #check if nullable
-        is_message = self.is_message(chunk) 
-        if is_message: return (nullable, 'message') #check if bool
-        is_bool = self.is_bool(chunk) 
-        if is_bool: return (nullable, 'bool') #check if bool
-        other_type = self.other_types(chunk) #check other types if not bool
-        type = self.clean_type(type) 
-        return (nullable, type) #{type: x, size: y, nullable: z}
+        is_nullable = self.is_nullable(chunk) #True or False
+        if self.is_message(chunk): 
+            type = 'message'
+            value = ''
+        elif self.is_bool(chunk):
+            type = 'bool'
+            value = ''
+        elif self.is_enum(chunk):
+            type = 'enum'
+            value = ''
+        elif self.is_struct(chunk):
+            type = 'struct'
+            value = self.get_struct_name(chunk)
+        elif self.is_map(chunk):
+            type = 'map'
+            value = self.get_map(chunk)
+        elif self.is_array(chunk):
+            type = 'array'
+            value = self.get_array(chunk)
+        elif self.is_basic(chunk):
+            type = 'basic'   
+            value = self.get_basic(chunk)     
+        elif self.is_custom(chunk):
+            type = 'custom'
+            value = self.get_custom(chunk)
+        elif self.is_char(chunk):
+            type = 'char'
+            value = self.get_char_type(chunk)
+        else:
+            type = 'unknown'
+            value = None
 
-    def is_char(self, chunk):
-        char_pattern = r'DefaultAllocator<([^>]*)>'
-        match = re.search(char_pattern, chunk)
-        if match:
-            signed_or_unsigned = match.group(1)
-            return signed_or_unsigned
-
+        return {'type': type, 'value': value, 'nullable': is_nullable}
+    
+    def is_nullable(self, chunk):
+        pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == (0|(long *)0x0)'
+        return bool(re.search(pattern, chunk)) #True or False
+    
     def is_message(self, chunk):
-        message_pattern = r'\(\*\*\(code \*\*\)\(\*\*\(long \*\*\)'
-        return bool(re.search(message_pattern, chunk)) #is message pattern in chunk?
+        pattern = r'\(\*\*\(code \*\*\)\(\*\*\(long \*\*\)'
+        return bool(re.search(pattern, chunk)) 
     
     def is_bool(self, chunk):
-        bool_pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == \'\\0\'|DAT_0901b5c8' 
-        match = re.search(bool_pattern, chunk)
-        if match: 
-            return True
-
-    def is_nullable(self, chunk):
-        nullable_pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == (0|(long *)0x0)'
-        return bool(re.search(nullable_pattern, chunk)) #True or False
+        pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == \'\\0\'|DAT_0901b5c8' 
+        return bool(re.search(pattern, chunk)) 
 
     def is_enum(self, chunk):
-        enum_pattern = 'StaticEnum<(ETz\\w+)>'
-        match = re.search(enum_pattern, chunk)
-        if match: 
-            enum_name = match.group(1)
-            return enum_name
+        pattern = 'StaticEnum<(ETz\\w+)>'
+        return bool(re.search(pattern, chunk)) 
         
     def is_struct(self, chunk):
-        struct_pattern = r'\s*(.*::ToJsonString())'
-        match = re.search(struct_pattern, chunk)
-        if match:
-            struct_name = match.group(1)
-            return struct_name
+        pattern = r'\s*(.*::ToJsonString())'
+        return bool(re.search(pattern, chunk)) 
+    def get_struct_name(self, chunk):
+        pattern = r'(?:::)?(?:FTz)?(\w+)::ToJsonString'
+        return (re.search(pattern, chunk)).group(1)
         
     def is_map(self, chunk):
-        map_pattern = r'JsonSerializer(<TMap<.*>)[\s\n]*::'
-        match = re.search(map_pattern, chunk)
-        if match:
-            map_name = match.group(1)
-            return map_name
+        pattern = r'JsonSerializer(<TMap<.*>)[\s\n]*::'
+        return bool(re.search(pattern, chunk))
+    def get_map(self, chunk):
+        pattern = r'JsonSerializer(<TMap<.*>)[\s\n]*::'
+        return (re.search(pattern, chunk)).group(1)
     
     def is_array(self, chunk):
-        array_pattern = r'JsonSerializer(<TArray<.*>)[\s\n]*::'
-        match = re.search(array_pattern, chunk)
-        if match:
-            array_name = match.group(1)
-            return array_name
+        pattern = r'JsonSerializer(<TArray<.*>)[\s\n]*::'
+        return bool(re.search(pattern, chunk))
+    def get_array(self, chunk):
+        pattern = r'JsonSerializer(<TArray<.*>)[\s\n]*::'
+        return (re.search(pattern, chunk)).group(1)
     
     def is_basic(self, chunk):
-        pattern = r'JsonSerializer(<.*>)[\s\n]*::'
-        match = re.search(pattern, chunk)
-        if match:
-            name = match.group(1)
-            return name
-
-    def clean_type(self, type):
-        patterns = [
-            r'(TMap<[^,]*,TMap<[^,]*,[^,]*,TMap<[^,]*,[^,]*)',#Nested Nested TMap
-            r'(TMap<[^,]*,TMap<[^,]*,[^,]*)', #Nested TMap
-            r'(TMap<[^,]*,[^,]*)',            #TMap
-            r'(TArray<[^,]*),',               #TArray
-            r'<(.*),void>'                    #Basic          
+        pattern = r'JsonSerializer<([^,]*)'
+        basic_types = [
+            'int', 'uint', 'float', 'long', 'long_long', 'short', 'unsigned_short',
+            'signed_char', 'unsigned_char', 'unsigned_int'
         ]
-        for pattern in patterns: 
-            match = re.search(pattern, type) #check if pattern is in type
-            if match: 
-                return match.group(1) #return the extracted pattern if matched
-        return type #keep the same if no match
+        match = re.search(pattern, chunk)
+        if match: 
+            return bool(match and match.group(1) in basic_types)
+    def get_basic(self, chunk):
+        pattern = r'JsonSerializer<([^,]*)'
+        return (re.search(pattern, chunk)).group(1)
+    
+    def is_custom(self, chunk):
+        pattern = r'JsonSerializer<([^,]*)'
+        return bool(re.search(pattern, chunk))
+    def get_custom(self, chunk):
+        pattern = r'JsonSerializer<([^,]*)'
+        return (re.search(pattern, chunk)).group(1)
+    
+    def is_char(self, chunk):
+        pattern = r'DefaultAllocator<[^>]*>'
+        return bool(re.search(pattern, chunk))
+    def get_char_type(self, chunk):
+        pattern = r'DefaultAllocator<([^>]*)>'
+        return (re.search(pattern, chunk)).group(1)
+
 
 class Export:
     """
@@ -150,7 +170,7 @@ class Export:
 
     def export(self, formatted_data, filename):
         with open(filename, 'w') as outfile:
-            json.dump(formatted_data, outfile, indent=2)
+            json.dump(formatted_data, outfile, indent=4)
         print(f"\nClassification data has been written to {filename}")
 
     def output_to_console(self, opcode, formatted_fields): 
