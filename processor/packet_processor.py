@@ -3,10 +3,10 @@ import json
 import re
 import sys
 
-with open('opcode_map.json', 'r') as file:
+with open('opcode_dict.json', 'r') as file:
     opcode_dictionary = json.load(file)
-with open('extractor_output.json', 'r') as file:
-    extractor_output = json.load(file)
+with open('extracted_structs.json', 'r') as file:
+    extracted_structs = json.load(file)
 
 class Parse:
     """
@@ -52,16 +52,16 @@ class Parse:
         rest_bytes = packet[5:]
 
         if msg_name is None:
-            print(f"Warning: Opcode '{opcode}' not found in 'opcode_map.json'")
+            print(f"Warning: Opcode '{opcode}' not found in 'opcode_dict.json'")
             sys.exit(1)
         else:
             return msg_name, rest_bytes
 
     def get_parsing_structure(self, name):
-        if name in extractor_output:
-            return extractor_output[name].copy() #returns the parsing structure (dict) 
+        if name in extracted_structs:
+            return extracted_structs[name].copy() #returns the parsing structure (dict) 
         else:
-            print(f"Warning: No parsing structure found with the name: '{name}' in 'extractor_output.json'")
+            print(f"Warning: No parsing structure found with the name: '{name}' in 'extracted_structs.json'")
             sys.exit(1)
 
     def parse_fields(self, parsing_structure, rest_bytes):
@@ -93,6 +93,10 @@ class Parse:
             if match:
                 struct_name = match.group(1)
                 parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
+
+        elif 'ETz' in field:
+            # logic for ETz
+            pass
 
         else:
             print(f"\n\nUnknown field type: {field}")
