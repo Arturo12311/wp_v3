@@ -1,6 +1,7 @@
 import struct
 import json
 import re
+import sys
 
 with open('opcode_map.json', 'r') as file:
     opcode_dictionary = json.load(file)
@@ -10,6 +11,9 @@ with open('extractor_output.json', 'r') as file:
 class Parse:
     """
     unpacks data from packet 
+    1. get name
+    2. get parsing structure
+    3. parse
     """
     def __init__(self, packet, type="msg", struct_name=""):
         self.packet = packet
@@ -17,70 +21,84 @@ class Parse:
         self.struct_name = struct_name
     
     def run(self):
+        print("-------------------------------------");print(f"Type: '{self.type}'"); print("-------------------------------------")
+        # get name 
         if self.type == "msg":
-            print("msg")
-            opcode, payload = self.get_opcode_name(self.packet)
-            print("-------------------------------------");print(f'Opcode: {opcode}');print('Payload:', [int(byte) for byte in payload]);print('---')
+            name, rest_bytes = self.get_msg_name(self.packet)
         elif self.type == "struct":
-            print("struct")
-            opcode = self.struct_name
-            payload = self.packet
-            print("-------------------------------------");print(f'Struct Name: {opcode}');print('Payload:', [int(byte) for byte in payload]);print('---')
-        fields = self.get_fields(opcode)
-        print('Fields: ', [(field,type) for field, type in fields.items()]);print('---')
-        parsed, remaining = self.parse_fields(fields, payload)
-        print('Parsed: ', [field for field in parsed]); print('Remaining: ', remaining);print('---')
-        return parsed, remaining
+            name = self.struct_name
+            rest_bytes = self.packet
+        print(f'---\nName: "{name}"' )
+        print('rest_bytes:', [int(byte) for byte in rest_bytes]);print('---')
 
-    def get_opcode_name(self, packet):  
+        # get parsing structure
+        parsing_structure = self.get_parsing_structure(name)
+        print(f'\n---\nFound Parsing Structure! \n{parsing_structure}\n---')
+        
+        # parse
+        parsed_data, rest_bytes = self.parse_fields(parsing_structure, rest_bytes)
+        print("\nCompleted parsing!")
+        print('\nparsed data: ', parsed_data); print('remaining: ', rest_bytes);print('-----')
+
+        return parsed_data, rest_bytes
+
+    def get_msg_name(self, packet):  
         null_byte = packet[0]
         opcode = struct.unpack('<I', packet[1:5])[0]
-        opcode = opcode_dictionary.get(str(opcode))
+        msg_name = opcode_dictionary.get(str(opcode))
+        rest_bytes = packet[5:]
 
-        if opcode is None:
-            raise ValueError(f"Unknown opcode: {opcode}")
-        
-        return opcode, packet[5:]
-
-    def get_fields(self, opcode):
-        if opcode in extractor_output:
-            return extractor_output[opcode].copy()
+        if msg_name is None:
+            print(f"Warning: Opcode '{opcode}' not found in 'opcode_map.json'")
+            sys.exit(1)
         else:
-            print(f"Warning: No fields found for opcode {opcode}")
-            return {}  # Return an empty dictionary if no fields are found
+            return msg_name, rest_bytes
 
-    def parse_fields(self, fields, payload):
-        for f, t in fields.items():
-            print(t)
-            value, rest = self.parse_field(t, payload)
-            fields[f] = value; 
-            payload = rest
-        return fields, payload 
+    def get_parsing_structure(self, name):
+        if name in extractor_output:
+            return extractor_output[name].copy() #returns the parsing structure (dict) 
+        else:
+            print(f"Warning: No parsing structure found with the name: '{name}' in 'extractor_output.json'")
+            sys.exit(1)
 
-    def parse_field(self, field, payload):
+    def parse_fields(self, parsing_structure, rest_bytes):
+        print(f'\n---\nParsing each field...')
+        for fieldname, field in parsing_structure.items():
+            parsed_field, rest_bytes = self.parse_field(field, rest_bytes) 
+            parsing_structure[fieldname] = parsed_field; 
+        return parsed_field, rest_bytes 
+
+    def parse_field(self, field, rest_bytes):
+        print(f'--\nrest_bytes before parsing field: {list(rest_bytes)}\n-')
         if 'Fstring' in field:
-            null = payload[0]
-            payload = payload[1:]
-            length = struct.unpack('<I', payload[0:4])[0]
-            value = payload[4:4+length].decode('utf-8')
-            rest = payload[4+length:]
+            null = rest_bytes[0]
+            rest_bytes = rest_bytes[1:]
+            length = struct.unpack('<I', rest_bytes[0:4])[0]
+            parsed_field = rest_bytes[4:4+length].decode('utf-8')
+            rest_bytes = rest_bytes[4+length:]
 
         elif field == "int":
-            value = struct.unpack('<I', payload[0:4])[0]
-            rest = payload[4:]
+            parsed_field = struct.unpack('<I', rest_bytes[0:4])[0]
+            rest_bytes = rest_bytes[4:]
 
         elif field == 'message':
-            value, rest = Parse(payload).run() 
+            print(f'Parsing message...')
+            parsed_field, rest_bytes = Parse(rest_bytes).run() 
 
         elif '::ToJsonString' in field:
-            name_pattern = r'(?:FTz)?(.*)::ToJsonString'
+            name_pattern = r'(?:FTz)?([^:]+)::ToJsonString'
             match = re.search(name_pattern, field)
-            struct_name = match.group(1)
-            value, rest = Parse(payload, "struct", struct_name).run()
+            if match:
+                struct_name = match.group(1)
+                print(f'Parsing \'{struct_name}\' structure...')
+                parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
 
         else:
-            raise ValueError(f"Unknown field type: {field}")
-        return value, rest
+            print(f"\n\nUnknown field type: {field}")
+            sys.exit(1)
+
+        print(f'-\nrest_bytes after parsing field: {rest_bytes}\n-\nfield type: {field}\n-\nparsed field: {parsed_field}\n--\n')
+        return parsed_field, rest_bytes
 
 def test_parser():
     packet = bytes([
@@ -102,10 +120,10 @@ def test_parser():
             13, 0, 0, 0, 48, 84, 55, 48, 48, 87, 48, 49, 48, 52, 48, 50, 48, 240, 46, 17, 0, 0, 0, 0,
             0
         ])
-    parsed, remaining = Parse(packet).run()
-    print("Parsing successful!")
-    print("Parsed result:", parsed)
-    print("Remaining: ", remaining)
+    parsed_data, rest_bytes = Parse(packet).run()
+    print("\n\n------------------------------\n")
+    print(f'Parsing successful!\n-\nParsed Data: {parsed_data}\n-\n"Rest Bytes: {rest_bytes}')
+    print("\n------------------------------")
 
 if __name__ == "__main__":
     test_parser()
