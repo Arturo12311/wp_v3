@@ -65,13 +65,13 @@ class ClassifyChunk:
         is_nullable = self.is_nullable(chunk) #True or False
         if self.is_message(chunk): 
             type = 'message'
-            value = ''
+            value = None
         elif self.is_bool(chunk):
             type = 'bool'
-            value = ''
+            value = None
         elif self.is_enum(chunk):
             type = 'enum'
-            value = ''
+            value = None
         elif self.is_struct(chunk):
             type = 'struct'
             value = self.get_struct_name(chunk)
@@ -95,7 +95,8 @@ class ClassifyChunk:
             value = None
 
         return {'type': type, 'value': value, 'nullable': is_nullable}
-    
+
+    # HELPERS
     def is_nullable(self, chunk):
         pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == (0|(long *)0x0)'
         return bool(re.search(pattern, chunk)) #True or False
@@ -121,9 +122,9 @@ class ClassifyChunk:
         
     def is_map(self, chunk):
         pattern = r'JsonSerializer(<TMap<.*>)[\s\n]*::'
-        return bool(re.search(pattern, chunk))
+        return bool(re.search(pattern, chunk)) 
     def get_map(self, chunk):
-        pattern = r'JsonSerializer(<TMap<.*>)[\s\n]*::'
+        pattern = r'JsonSerializer(<TMap<.*>)>'
         return (re.search(pattern, chunk)).group(1)
     
     def is_array(self, chunk):
@@ -182,7 +183,7 @@ class Export:
 
 
 # run the program
-with open('./data.json', 'r') as file:
+with open('./_raw_data.json', 'r') as file:
     data = json.load(file)
 
 parsing_structures_formatted = {}
@@ -197,5 +198,5 @@ for chunk in parsing_structures_chunks:
     parsing_structures_formatted[struct_name] = struct_formatted #dict
     export.output_to_console(struct_name, struct_formatted)
 
-output_file = 'parsing_structures.json'
+output_file = '_structures.json'
 export.export(parsing_structures_formatted, output_file)
