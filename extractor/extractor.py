@@ -54,23 +54,30 @@ class ClassifyChunk:
     def __init__(self):
         pass
 
-    def classify_chunk(self, chunked):
-        self.classified = {} #output dict
-        for fieldname, chunk in chunked.items(): #for each chunk
-            chunk_tuple = self.determine_type(chunk) 
-            self.classified[fieldname] = chunk_tuple #tuple as value for each fieldname key
-        return self.classified #return dictionary of classified chunks
+    def format_fields(self, struct_chunk):
+        struct_formatted = {} #output dict
+        for field_name, field_chunk in struct_chunk.items(): 
+            field_formatted = self.format_field(field_chunk) 
+            struct_formatted[field_name] = field_formatted #{type: x, size: y, nullable: z}
+        return struct_formatted 
     
-    def determine_type(self, chunk):
+    def format_field(self, chunk):
         nullable = self.is_nullable(chunk) #check if nullable
         is_message = self.is_message(chunk) 
         if is_message: return (nullable, 'message') #check if bool
         is_bool = self.is_bool(chunk) 
         if is_bool: return (nullable, 'bool') #check if bool
-        type = self.other_types(chunk) #check other types if not bool
+        other_type = self.other_types(chunk) #check other types if not bool
         type = self.clean_type(type) 
-        return (nullable, type) #returns tuple
-    
+        return (nullable, type) #{type: x, size: y, nullable: z}
+
+    def is_char(self, chunk):
+        char_pattern = r'DefaultAllocator<([^>]*)>'
+        match = re.search(char_pattern, chunk)
+        if match:
+            signed_or_unsigned = match.group(1)
+            return signed_or_unsigned
+
     def is_message(self, chunk):
         message_pattern = r'\(\*\*\(code \*\*\)\(\*\*\(long \*\*\)'
         return bool(re.search(message_pattern, chunk)) #is message pattern in chunk?
@@ -83,22 +90,43 @@ class ClassifyChunk:
 
     def is_nullable(self, chunk):
         nullable_pattern = r'\(in_x0 \+ (0x)?[0-9A-Fa-f]+\) == (0|(long *)0x0)'
-        return bool(re.search(nullable_pattern, chunk)) #is nullable pattern in chunk?
+        return bool(re.search(nullable_pattern, chunk)) #True or False
 
-    def other_types(self, chunk):
-        # regex patterns (struct, enum, map/array/basictype)
-        type_patterns = [
-            '\s*(.*::ToJsonString())',
-            'StaticEnum<(ETz\\w+)>',
-            'JsonSerializer(<.*>)[\s\n]*::',
-        ]
-        for pattern in type_patterns: #for each type pattern 
-            match = re.search(pattern, chunk) #check if pattern in chunk
-            if match:
-                type = match.group(1) 
-                return type #return matched pattern type
-        return "unknown" #didnt match a pattern
+    def is_enum(self, chunk):
+        enum_pattern = 'StaticEnum<(ETz\\w+)>'
+        match = re.search(enum_pattern, chunk)
+        if match: 
+            enum_name = match.group(1)
+            return enum_name
+        
+    def is_struct(self, chunk):
+        struct_pattern = r'\s*(.*::ToJsonString())'
+        match = re.search(struct_pattern, chunk)
+        if match:
+            struct_name = match.group(1)
+            return struct_name
+        
+    def is_map(self, chunk):
+        map_pattern = r'JsonSerializer(<TMap<.*>)[\s\n]*::'
+        match = re.search(map_pattern, chunk)
+        if match:
+            map_name = match.group(1)
+            return map_name
     
+    def is_array(self, chunk):
+        array_pattern = r'JsonSerializer(<TArray<.*>)[\s\n]*::'
+        match = re.search(array_pattern, chunk)
+        if match:
+            array_name = match.group(1)
+            return array_name
+    
+    def is_basic(self, chunk):
+        pattern = r'JsonSerializer(<.*>)[\s\n]*::'
+        match = re.search(pattern, chunk)
+        if match:
+            name = match.group(1)
+            return name
+
     def clean_type(self, type):
         patterns = [
             r'(TMap<[^,]*,TMap<[^,]*,[^,]*,TMap<[^,]*,[^,]*)',#Nested Nested TMap
@@ -115,58 +143,39 @@ class ClassifyChunk:
 
 class Export:
     """
-    chunks, classifies, then exports the formatted_data to specified file
+    exports the formatted_data to specified file
     """
     def __init__(self):
         pass
 
-    def run(self):
-        list_of_chunks = self.chunk()
-        formated_data = self.classify(list_of_chunks)
-        self.export(formated_data)
-
-    def chunk(self):
-        with open('./data.json', 'r') as file:
-            dataset = json.load(file)
-        chunkify = Chunkify()
-        list_of_chunks = chunkify.get_list_of_chunks(dataset) 
-        return list_of_chunks
-
-    def classify(self, list_of_chunks):
-        formatted_data = {}
-        for chunk in list_of_chunks:
-            [(opcode, chunk)] = chunk.items()    
-            classify = ClassifyChunk()    
-            classified_fields = classify.classify_chunk(chunk) #dictionary of classified types
-            formatted_fields = self.format_fields(classified_fields) 
-            formatted_data[opcode] = formatted_fields #adds {'opcode': 'formatted_fields dictionary'} to output dictionary
-            # self.output_to_console(opcode, classified_fields) #not needed for now
-        return formatted_data
-
-    def format_fields(self, classified_fields):
-        formatted_fields = {}  
-        for fieldname, type_info in classified_fields.items(): 
-            if not type_info[0]: #not nullable
-                formatted_fields[fieldname] = type_info[1] #just put the type name if not nullable
-            else:
-                formatted_fields[fieldname] = f"(nullable, {type_info[1]})" #add 'nullable' if nullable type
-        return formatted_fields
-    
-    def export(self, formatted_data):
-        with open('extractor_output.json', 'w') as outfile:
+    def export(self, formatted_data, filename):
+        with open(filename, 'w') as outfile:
             json.dump(formatted_data, outfile, indent=2)
-        print("\nClassification data has been written to 'extractor_output.json'")
+        print(f"\nClassification data has been written to {filename}")
 
-    def output_to_console(self, opcode, fields_chunk): 
+    def output_to_console(self, opcode, formatted_fields): 
         print("\n\n---------------------------------------------------")
-        print(f'"{opcode}" {{')
-        for fieldname, type in fields_chunk.items():
-            if type[0] == False: #not nullable
-                print(f'    {fieldname:<30}: {type[1]}') #just print the type
-            else:
-                print(f'    {fieldname:<30}: (nullable, {type[1]})') #prepend nullable label
+        print(f'"{opcode}": {{')
+        for fieldname, formatted_field in formatted_fields.items():
+            print(f'    {fieldname:<30}: {formatted_field}') 
         print('  }')
 
-export = Export()
-export.run()
 
+# run the program
+with open('./data.json', 'r') as file:
+    data = json.load(file)
+
+parsing_structures_formatted = {}
+chunkify = Chunkify()
+classify = ClassifyChunk()
+export = Export()
+
+parsing_structures_chunks = chunkify.get_list_of_chunks(data)
+for chunk in parsing_structures_chunks:
+    [(struct_name, struct_chunk)] = chunk.items()   
+    struct_formatted = classify.format_fields(struct_chunk) 
+    parsing_structures_formatted[struct_name] = struct_formatted #dict
+    export.output_to_console(struct_name, struct_formatted)
+
+output_file = 'parsing_structures.json'
+export.export(parsing_structures_formatted, output_file)
