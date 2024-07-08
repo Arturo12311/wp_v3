@@ -1,34 +1,44 @@
 import json
-import re
 
-def extract_unique_types(data):
-    unique_types = set()
-
-    def process_item(item):
-        if isinstance(item, dict):
-            for value in item.values():
-                if isinstance(value, str):
-                    unique_types.add(value)
+def process_item(structures, unique_values=None):
+    if unique_values is None:
+        unique_values = set()
+    
+    if isinstance(structures, dict):
+        for key, value in structures.items():
+            if isinstance(value, dict):
+                if 'type' in value and 'value' in value:
+                    # Add the type-value combination to our set
+                    unique_values.add((value['type'], value['value']))
                 else:
-                    process_item(value)
-        elif isinstance(item, list):
-            for element in item:
-                process_item(element)
+                    # Recurse into nested dictionaries
+                    process_item(value, unique_values)
+    elif isinstance(structures, list):
+        for element in structures:
+            process_item(element, unique_values)
+    
+    return unique_values
 
-    process_item(data)
-    return sorted(list(unique_types))
+# Main execution
+def main():
+    file_name = '_structures.json'
+    with open(file_name, 'r') as file:
+        structures = json.load(file)
+    
+    unique_combinations = process_item(structures)
+    
+    print("Unique type-value combinations:")
+    for type_field, value_field in sorted(unique_combinations):
+        print(f"Type: {type_field}, Value: {value_field}")
+    
+    print("\nUnique values:")
+    # Use a custom key function to handle None values
+    def sort_key(x):
+        return (x is None, x)
+    
+    unique_values = sorted(set(value for _, value in unique_combinations), key=sort_key)
+    for value in unique_values:
+        print(value)
 
-# Read the JSON file
-file_name = 'extracted_structs.json'
-with open(file_name, 'r') as file:
-    json_data = json.load(file)
-
-# Extract unique types
-unique_types = extract_unique_types(json_data)
-
-# Print the unique types
-print("Unique Types:")
-for type_name in unique_types:
-    print(type_name)
-
-print(f"\nTotal unique types: {len(unique_types)}")
+if __name__ == "__main__":
+    main()
