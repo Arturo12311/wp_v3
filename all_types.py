@@ -8,13 +8,7 @@ def extract_unique_types(data):
         if isinstance(item, dict):
             for value in item.values():
                 if isinstance(value, str):
-                    # Remove any parentheses and their contents
-                    clean_value = value.split('(')[0].strip()
-                    # Split by :: and take the first part
-                    type_name = clean_value.split('::')[0].strip()
-                    # Remove ETz and FTz prefixes
-                    type_name = re.sub(r'^[EF]Tz', '', type_name)
-                    unique_types.add(type_name)
+                    unique_types.add(value)
                 else:
                     process_item(value)
         elif isinstance(item, list):
@@ -25,7 +19,7 @@ def extract_unique_types(data):
     return sorted(list(unique_types))
 
 # Read the JSON file
-file_name = 'extractor_output.json'
+file_name = 'extracted_structs.json'
 with open(file_name, 'r') as file:
     json_data = json.load(file)
 

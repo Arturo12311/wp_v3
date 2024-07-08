@@ -101,6 +101,7 @@ class ClassifyChunk:
     
     def clean_type(self, type):
         patterns = [
+            r'(TMap<[^,]*,TMap<[^,]*,[^,]*,TMap<[^,]*,[^,]*)',#Nested Nested TMap
             r'(TMap<[^,]*,TMap<[^,]*,[^,]*)', #Nested TMap
             r'(TMap<[^,]*,[^,]*)',            #TMap
             r'(TArray<[^,]*),',               #TArray
