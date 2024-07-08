@@ -21,7 +21,7 @@ class Parse:
         self.struct_name = struct_name
     
     def run(self):
-        print("-------------------------------------");print(f"Type: '{self.type}'"); print("-------------------------------------")
+        print("-------------------------------------");print(f"Parsing '{self.type}'..."); print("-------------------------------------")
         # get name 
         if self.type == "msg":
             name, rest_bytes = self.get_msg_name(self.packet)
@@ -36,10 +36,13 @@ class Parse:
         print(f'\n---\nFound Parsing Structure! \n{parsing_structure}\n---')
         
         # parse
-        parsed_data, rest_bytes = self.parse_fields(parsing_structure, rest_bytes)
-        print("\nCompleted parsing!")
-        print('\nparsed data: ', parsed_data); print('remaining: ', rest_bytes);print('-----')
+        if parsing_structure == {}:
+            parsed_data = {}
+        else: 
+            parsed_data, rest_bytes = self.parse_fields(parsing_structure, rest_bytes)
+        print(f'\n---\nCompleted parsing!\nname: {name}\nparsed data: {parsed_data}\nrest_bytes: {list(rest_bytes)}\n---')
 
+        print("-------------------------------------");print(f"Finished Parsing '{self.type}'"); print("-------------------------------------")
         return parsed_data, rest_bytes
 
     def get_msg_name(self, packet):  
@@ -62,15 +65,15 @@ class Parse:
             sys.exit(1)
 
     def parse_fields(self, parsing_structure, rest_bytes):
-        print(f'\n---\nParsing each field...')
+        print(f'\n---\nParsing fields...')
         for fieldname, field in parsing_structure.items():
             parsed_field, rest_bytes = self.parse_field(field, rest_bytes) 
             parsing_structure[fieldname] = parsed_field; 
         return parsed_field, rest_bytes 
 
     def parse_field(self, field, rest_bytes):
-        print(f'--\nrest_bytes before parsing field: {list(rest_bytes)}\n-')
-        if 'Fstring' in field:
+        print(f'--\nfield: {field}\nbytes before parsing field: {list(rest_bytes)}\n-')
+        if field == "FString":
             null = rest_bytes[0]
             rest_bytes = rest_bytes[1:]
             length = struct.unpack('<I', rest_bytes[0:4])[0]
@@ -82,7 +85,6 @@ class Parse:
             rest_bytes = rest_bytes[4:]
 
         elif field == 'message':
-            print(f'Parsing message...')
             parsed_field, rest_bytes = Parse(rest_bytes).run() 
 
         elif '::ToJsonString' in field:
@@ -90,14 +92,13 @@ class Parse:
             match = re.search(name_pattern, field)
             if match:
                 struct_name = match.group(1)
-                print(f'Parsing \'{struct_name}\' structure...')
                 parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
 
         else:
             print(f"\n\nUnknown field type: {field}")
             sys.exit(1)
 
-        print(f'-\nrest_bytes after parsing field: {rest_bytes}\n-\nfield type: {field}\n-\nparsed field: {parsed_field}\n--\n')
+        print(f'-\nbytes after parsing {field}: {list(rest_bytes)}\n-\nfield type: {field}\n-\nparsed field: {parsed_field}\n--\n')
         return parsed_field, rest_bytes
 
 def test_parser():

@@ -1,4 +1,5 @@
 {
+  "AuthenticateInfo": {},
   "AnniversaryAchievementInitializeDataNotify": {
     "Base": "FTzErTozMessage::ToJsonString",
     "AnniversaryAchievementInfos": "TMap<FTzCuid,TArray<TSharedPtr<FTzAnniversaryAchievementInfo"
