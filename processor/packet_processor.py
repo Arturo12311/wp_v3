@@ -69,7 +69,7 @@ class Parse:
         for fieldname, field in parsing_structure.items():
             parsed_field, rest_bytes = self.parse_field(field, rest_bytes) 
             parsing_structure[fieldname] = parsed_field; 
-        return parsed_field, rest_bytes 
+        return parsing_structure, rest_bytes 
 
     def parse_field(self, field, rest_bytes):
         print(f'--\nfield: {field}\nbytes before parsing field: {list(rest_bytes)}\n-')
@@ -80,9 +80,13 @@ class Parse:
             parsed_field = rest_bytes[4:4+length].decode('utf-8')
             rest_bytes = rest_bytes[4+length:]
 
-        elif field == "int":
+        elif field == 'int' or 'ETz' in field:
             parsed_field = struct.unpack('<I', rest_bytes[0:4])[0]
             rest_bytes = rest_bytes[4:]
+
+        elif field == 'long_long':
+            parsed_field = struct.unpack('<Q', rest_bytes[0:8])[0]
+            rest_bytes = rest_bytes[8:]
 
         elif field == 'message':
             parsed_field, rest_bytes = Parse(rest_bytes).run() 
@@ -95,9 +99,8 @@ class Parse:
                 parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
 
         elif 'ETz' in field:
-            # logic for ETz
-            pass
-
+            parsed_field = struct.unpack('<I', rest_bytes[:1])[0]
+            rest_bytes = rest_bytes[1:]
         else:
             print(f"\n\nUnknown field type: {field}")
             sys.exit(1)
