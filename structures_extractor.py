@@ -75,6 +75,9 @@ class ClassifyChunk:
         elif self.is_struct(chunk):
             type = 'struct'
             value = self.get_struct_name(chunk)
+            if value == 'Cuid':
+                type = 'custom'
+                value = 'Cuid'
         elif self.is_map(chunk):
             type = 'map'
             value = self.get_map(chunk)
@@ -84,6 +87,12 @@ class ClassifyChunk:
         elif self.is_basic(chunk):
             type = 'basic'   
             value = self.get_basic(chunk)     
+        elif self.is_vector(chunk):
+            type = 'vector'
+            value = self.vector_type(chunk)
+        elif self.is_string(chunk):
+            type = 'string'
+            value = self.get_string(chunk)
         elif self.is_custom(chunk):
             type = 'custom'
             value = self.get_custom(chunk)
@@ -147,6 +156,21 @@ class ClassifyChunk:
         pattern = r'JsonSerializer<([^,]*)'
         return (re.search(pattern, chunk)).group(1)
     
+    def is_vector(self, chunk):
+        pattern = r'ndk1::vector<([^,]*),'
+        return bool(re.search(pattern, chunk))
+    def vector_type(self,chunk):
+        pattern = r'::vector<([^,]*),'
+        print(chunk)
+        return (re.search(pattern, chunk)).group(1)
+    
+    def is_string(self, chunk):
+        pattern = r'basic_string<([^,]*),'
+        return bool(re.search(pattern, chunk))
+    def get_string(self, chunk):
+        pattern = r'basic_string<([^,]*),'
+        return (re.search(pattern, chunk)).group(1)
+
     def is_custom(self, chunk):
         pattern = r'JsonSerializer<([^,]*)'
         return bool(re.search(pattern, chunk))
@@ -160,7 +184,6 @@ class ClassifyChunk:
     def get_char_type(self, chunk):
         pattern = r'DefaultAllocator<([^>]*)>'
         return (re.search(pattern, chunk)).group(1)
-
 
 class Export:
     """

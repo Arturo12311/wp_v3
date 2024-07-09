@@ -21,41 +21,55 @@ class Parse:
         self.struct_name = struct_name
     
     def run(self):
-        print("-------------------------------------");print(f"Parsing '{self.type}'..."); print("-------------------------------------")
         # get name 
         if self.type == "msg":
-            name, rest_bytes = self.get_msg_name(self.packet)
+            name, bytes = self.get_msg_name(self.packet)
         elif self.type == "struct":
             name = self.struct_name
-            rest_bytes = self.packet
-        print(f'---\nName: "{name}"' )
-        print('rest_bytes:', [int(byte) for byte in rest_bytes]);print('---')
+            bytes = self.packet
 
         # get parsing structure
         parsing_structure = self.get_parsing_structure(name)
-        print(f'\n---\nFound Parsing Structure! \n{parsing_structure}\n---')
+
+        # console output
+        print("\n-----------------------------------------------");print(f"Parsing \"{name}\" '{self.type}'...\n"); 
+        print(f'fields:  {{')
+        if parsing_structure != {}:
+            for key, value in parsing_structure.items():
+                print(f'    {key}: {value},')
+            print("  }")
+        else:
+            print(f'    empty\n  }}')
+        print('bytes:', [int(byte) for byte in bytes])
+        print("-----------------------------------------------")
         
-        # parse
+        # parse the bytes
         if parsing_structure == {}:
             parsed_data = {}
         else: 
-            parsed_data, rest_bytes = self.parse_fields(parsing_structure, rest_bytes)
-        print(f'\n---\nCompleted parsing!\nname: {name}\nparsed data: {parsed_data}\nrest_bytes: {list(rest_bytes)}\n---')
+            parsed_data, bytes = self.parse_fields(parsing_structure, bytes)
 
-        print("-------------------------------------");print(f"Finished Parsing '{self.type}'"); print("-------------------------------------")
-        return parsed_data, rest_bytes
+        # console output
+        print("-----------------------------------------------");print(f"Finished \"{name}\"\nremaining bytes: {list(bytes)}"); print("-----------------------------------------------")
+
+        # return the parsed bytes and the remaining bytes
+        return parsed_data, bytes
 
     def get_msg_name(self, packet):  
         null_byte = packet[0]
         opcode = struct.unpack('<I', packet[1:5])[0]
         msg_name = opcode_dictionary.get(str(opcode))
-        rest_bytes = packet[5:]
+
+        if str(opcode) == '67471100':
+            msg_name = 'TlsLikeEncryptPremasterSecret'
+
+        bytes = packet[5:]
 
         if msg_name is None:
-            print(f"Warning: Opcode '{opcode}' not found in 'opcode_dict.json'")
+            print(f"Warning: Opcode '{opcode}' not found in 'opcode_dict.json' for {list(packet)}")
             sys.exit(1)
         else:
-            return msg_name, rest_bytes
+            return msg_name, bytes
 
     def get_parsing_structure(self, name):
         if name in extracted_structs:
@@ -64,45 +78,79 @@ class Parse:
             print(f"Warning: No parsing structure found with the name: '{name}' in 'extracted_structs.json'")
             sys.exit(1)
 
-    def parse_fields(self, parsing_structure, rest_bytes):
+    def parse_fields(self, parsing_structure, bytes):
         print(f'\n---\nParsing fields...')
         parsed_struct = {}
         for fieldname, field_dict in parsing_structure.items():
-            parsed_field, rest_bytes = self.parse_field(field_dict, rest_bytes) 
+            parsed_field, bytes = self.parse_field(field_dict, bytes, fieldname) 
             parsed_struct[fieldname] = parsed_field; 
-        return parsed_struct, rest_bytes 
+        return parsed_struct, bytes 
 
-    def parse_field(self, field_dict, rest_bytes):
-        rest_bytes_before = rest_bytes
-        if field_dict['value'] == "FString":
-            null = rest_bytes[0]
-            rest_bytes = rest_bytes[1:]
-            length = struct.unpack('<I', rest_bytes[0:4])[0]
-            parsed_field = rest_bytes[4:4+length].decode('utf-8')
-            rest_bytes = rest_bytes[4+length:]
+    def parse_field(self, field_dict, bytes, fieldname):
+        string = False
+        bytes_before = bytes
+        if field_dict['value'] == "FString" or field_dict['type'] == 'string':
+            null = bytes[0]
+            bytes = bytes[1:]
+            length = struct.unpack('<I', bytes[0:4])[0]
+            parsed_field = bytes[4:4+length].decode('iso-8859-1')
+            bytes = bytes[4+length:]
+            string = True
 
-        elif field_dict['type'] == 'enum' or field_dict['value'] == 'int':
-            parsed_field = struct.unpack('<I', rest_bytes[0:4])[0]
-            rest_bytes = rest_bytes[4:]
+        elif field_dict['type'] == 'enum' or field_dict['value'] == 'int' or field_dict['value'] == 'FDateTime' or field_dict['value'] == 'Cuid':
+            parsed_field = struct.unpack('<I', bytes[0:4])[0]
+            bytes = bytes[4:]
 
         elif field_dict['value'] == 'long_long':
-            parsed_field = struct.unpack('<Q', rest_bytes[0:8])[0]
-            rest_bytes = rest_bytes[8:]
+            parsed_field = struct.unpack('<Q', bytes[0:8])[0]
+            bytes = bytes[8:]
 
         elif field_dict['type'] == 'message':
-            parsed_field, rest_bytes = Parse(rest_bytes).run() 
+            parsed_field, bytes = Parse(bytes).run() 
 
         elif field_dict['type'] == 'struct':
             struct_name = field_dict['value']
-            parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
+            parsed_field, bytes = Parse(bytes, "struct", struct_name).run()
+        
+        elif field_dict['value'] == 'FVector':
+            x, y, z = struct.unpack('<fff', bytes[:12])
+            parsed_field = (x, y, z) 
+            bytes = bytes[12:]       
+
+        elif field_dict['type'] == 'vector':
+            print("hi")
+            print(bytes)
+            null = bytes[0]
+            bytes = bytes[1:]
+            length = struct.unpack('<I', bytes[0:4])[0]
+            print(length)
+            vector_bytes = bytes[4:4+length]
+            parsed_field = self.parse_type(field_dict['value'], vector_bytes)
+            rest_bytes = bytes[4+length:]
+            print(bytes)
+        
+        elif field_dict['type'] == 'bool':
+            parsed_field = bytes[0]
+            bytes = bytes[1:]
 
         else:
             print(f"\n\nUnknown field type: {field_dict['type']}, {field_dict['value']}")
             sys.exit(1)
 
-        print(f'--\nfield: {field_dict}\nbytes before parsing field: {list(rest_bytes_before)}\n-')
-        print(f'-\nbytes after parsing: {list(rest_bytes)}\n-\nfield type: {field_dict}\n-\nparsed field: {parsed_field}\n--\n')
-        return parsed_field, rest_bytes
+        print(f'--\nfield name: {fieldname} \nfield type: {field_dict}\nbytes before: {list(bytes_before)}')
+        if not string:
+            print(f'bytes after: {list(bytes)}\nparsed field: {parsed_field}\n--\n')
+        else:
+            print(f'bytes after: {list(bytes)}\nparsed field: {parsed_field.encode("utf-8")}\n--\n')
+        return parsed_field, bytes
+    
+    def parse_type(self, type, bytes):
+        if type == 'unsigned_char':
+            output = []
+            while bytes:
+                output.append(bytes[0])
+                bytes = bytes[1:]
+            return output
 
 def test_parser():
     packet = bytes([
@@ -124,9 +172,9 @@ def test_parser():
             13, 0, 0, 0, 48, 84, 55, 48, 48, 87, 48, 49, 48, 52, 48, 50, 48, 240, 46, 17, 0, 0, 0, 0,
             0
         ])
-    parsed_data, rest_bytes = Parse(packet).run()
+    parsed_data, bytes = Parse(packet).run()
     print("\n\n------------------------------\n")
-    print(f'Parsing successful!\n-\nParsed Data: {parsed_data}\n-\n"Rest Bytes: {rest_bytes}')
+    print(f'Parsing successful!\n-\nParsed Data: {parsed_data}\n-\n"Rest Bytes: {bytes}')
     print("\n------------------------------")
 
 if __name__ == "__main__":
