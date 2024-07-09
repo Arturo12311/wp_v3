@@ -73,7 +73,7 @@ class Parse:
         return parsed_struct, rest_bytes 
 
     def parse_field(self, field_dict, rest_bytes):
-        print(f'--\nfield: {field_dict}\nbytes before parsing field: {list(rest_bytes)}\n-')
+        rest_bytes_before = rest_bytes
         if field_dict['value'] == "FString":
             null = rest_bytes[0]
             rest_bytes = rest_bytes[1:]
@@ -100,7 +100,8 @@ class Parse:
             print(f"\n\nUnknown field type: {field_dict['type']}, {field_dict['value']}")
             sys.exit(1)
 
-        print(f'-\nbytes after parsing {field_dict}: {list(rest_bytes)}\n-\nfield type: {field_dict}\n-\nparsed field: {parsed_field}\n--\n')
+        print(f'--\nfield: {field_dict}\nbytes before parsing field: {list(rest_bytes_before)}\n-')
+        print(f'-\nbytes after parsing: {list(rest_bytes)}\n-\nfield type: {field_dict}\n-\nparsed field: {parsed_field}\n--\n')
         return parsed_field, rest_bytes
 
 def test_parser():
