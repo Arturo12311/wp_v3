@@ -5,7 +5,7 @@ import sys
 
 with open('_opcode_dict.json', 'r') as file:
     opcode_dictionary = json.load(file)
-with open('_extracted_structs.json', 'r') as file:
+with open('_structures.json', 'r') as file:
     extracted_structs = json.load(file)
 
 class Parse:
@@ -66,46 +66,41 @@ class Parse:
 
     def parse_fields(self, parsing_structure, rest_bytes):
         print(f'\n---\nParsing fields...')
-        for fieldname, field in parsing_structure.items():
-            parsed_field, rest_bytes = self.parse_field(field, rest_bytes) 
-            parsing_structure[fieldname] = parsed_field; 
-        return parsing_structure, rest_bytes 
+        parsed_struct = {}
+        for fieldname, field_dict in parsing_structure.items():
+            parsed_field, rest_bytes = self.parse_field(field_dict, rest_bytes) 
+            parsed_struct[fieldname] = parsed_field; 
+        return parsed_struct, rest_bytes 
 
-    def parse_field(self, field, rest_bytes):
-        print(f'--\nfield: {field}\nbytes before parsing field: {list(rest_bytes)}\n-')
-        if field == "FString":
+    def parse_field(self, field_dict, rest_bytes):
+        print(f'--\nfield: {field_dict}\nbytes before parsing field: {list(rest_bytes)}\n-')
+        if field_dict['value'] == "FString":
             null = rest_bytes[0]
             rest_bytes = rest_bytes[1:]
             length = struct.unpack('<I', rest_bytes[0:4])[0]
             parsed_field = rest_bytes[4:4+length].decode('utf-8')
             rest_bytes = rest_bytes[4+length:]
 
-        elif field == 'int' or 'ETz' in field:
+        elif field_dict['type'] == 'enum' or field_dict['value'] == 'int':
             parsed_field = struct.unpack('<I', rest_bytes[0:4])[0]
             rest_bytes = rest_bytes[4:]
 
-        elif field == 'long_long':
+        elif field_dict['value'] == 'long_long':
             parsed_field = struct.unpack('<Q', rest_bytes[0:8])[0]
             rest_bytes = rest_bytes[8:]
 
-        elif field == 'message':
+        elif field_dict['type'] == 'message':
             parsed_field, rest_bytes = Parse(rest_bytes).run() 
 
-        elif '::ToJsonString' in field:
-            name_pattern = r'(?:FTz)?([^:]+)::ToJsonString'
-            match = re.search(name_pattern, field)
-            if match:
-                struct_name = match.group(1)
-                parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
+        elif field_dict['type'] == 'struct':
+            struct_name = field_dict['value']
+            parsed_field, rest_bytes = Parse(rest_bytes, "struct", struct_name).run()
 
-        elif 'ETz' in field:
-            parsed_field = struct.unpack('<I', rest_bytes[:1])[0]
-            rest_bytes = rest_bytes[1:]
         else:
-            print(f"\n\nUnknown field type: {field}")
+            print(f"\n\nUnknown field type: {field_dict['type']}, {field_dict['value']}")
             sys.exit(1)
 
-        print(f'-\nbytes after parsing {field}: {list(rest_bytes)}\n-\nfield type: {field}\n-\nparsed field: {parsed_field}\n--\n')
+        print(f'-\nbytes after parsing {field_dict}: {list(rest_bytes)}\n-\nfield type: {field_dict}\n-\nparsed field: {parsed_field}\n--\n')
         return parsed_field, rest_bytes
 
 def test_parser():

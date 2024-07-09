@@ -1,4 +1,5 @@
 {
+    "AuthenticateInfo": {},
     "AnniversaryAchievementInitializeDataNotify": {
         "Base": {
             "type": "struct",
