@@ -32,7 +32,7 @@ class Parse:
         parsing_structure = self.get_parsing_structure(name)
 
         # console output
-        print("\n-----------------------------------------------");print(f"Parsing \"{name}\" '{self.type}'...\n"); 
+        print("\n-----------------------------------------------");print(f"Parsing \"{name}\" '{self.type}'..."); 
         print(f'fields:  {{')
         if parsing_structure != {}:
             for key, value in parsing_structure.items():
@@ -50,7 +50,7 @@ class Parse:
             parsed_data, bytes = self.parse_fields(parsing_structure, bytes)
 
         # console output
-        print("-----------------------------------------------");print(f"Finished \"{name}\"\nremaining bytes: {list(bytes)}"); print("-----------------------------------------------")
+        print("-----------------------------------------------");print(f"Finished \"{name}\"\nremaining bytes: {list(bytes)}"); print(f'field data: {parsed_data}'); print("-----------------------------------------------")
 
         # return the parsed bytes and the remaining bytes
         return parsed_data, bytes
@@ -118,16 +118,12 @@ class Parse:
             bytes = bytes[12:]       
 
         elif field_dict['type'] == 'vector':
-            print("hi")
-            print(bytes)
             null = bytes[0]
             bytes = bytes[1:]
             length = struct.unpack('<I', bytes[0:4])[0]
-            print(length)
             vector_bytes = bytes[4:4+length]
             parsed_field = self.parse_type(field_dict['value'], vector_bytes)
             rest_bytes = bytes[4+length:]
-            print(bytes)
         
         elif field_dict['type'] == 'bool':
             parsed_field = bytes[0]
